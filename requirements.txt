@@ -1,0 +1,7 @@
+flask
+requests
+python-whois
+dnspython
+pyopenssl
+rich
+python-dateutil
