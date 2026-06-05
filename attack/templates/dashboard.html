@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="refresh" content="30" />
+  <title>Dashboard — Campanha de Phishing</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a237e 0%, #0067b8 100%);
+      color: #fff;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .header h1 { font-size: 22px; font-weight: 700; }
+    .header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+    .header .refresh-note { font-size: 12px; opacity: 0.7; }
+
+    .content { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      border-top: 3px solid #0067b8;
+    }
+
+    .stat-card.green  { border-top-color: #2e7d32; }
+    .stat-card.orange { border-top-color: #e65100; }
+    .stat-card.red    { border-top-color: #c62828; }
+
+    .stat-card .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    /* Funnel */
+    .funnel {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+    .funnel h2 { font-size: 16px; color: #333; margin-bottom: 20px; }
+
+    .funnel-steps {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+
+    .funnel-step {
+      text-align: center;
+      padding: 12px 20px;
+      background: #e3f2fd;
+      border-radius: 4px;
+      min-width: 120px;
+    }
+
+    .funnel-step .step-value { font-size: 24px; font-weight: 700; color: #0067b8; }
+    .funnel-step .step-label { font-size: 12px; color: #555; margin-top: 4px; }
+
+    .funnel-arrow {
+      font-size: 20px;
+      color: #999;
+      padding: 0 12px;
+    }
+
+    /* Table */
+    .table-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px 32px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+    .table-section h2 { font-size: 16px; color: #333; margin-bottom: 20px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+    thead th {
+      text-align: left;
+      padding: 8px 12px;
+      background: #f0f4f8;
+      font-size: 12px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 2px solid #ddd;
+    }
+
+    tbody tr { border-bottom: 1px solid #eee; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td { padding: 10px 12px; color: #333; vertical-align: top; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge.email  { background: #e8f5e9; color: #2e7d32; }
+    .badge.direct { background: #f5f5f5; color: #757575; }
+
+    .empty {
+      text-align: center;
+      color: #999;
+      padding: 40px 0;
+      font-size: 15px;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>Dashboard da Campanha</h1>
+      <p class="subtitle">Projeto académico SEGRED — Simulação de phishing</p>
+    </div>
+    <span class="refresh-note">Atualiza automaticamente a cada 30s</span>
+  </header>
+
+  <main class="content">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Emails Enviados</div>
+        <div class="value">{{ stats.total_sent }}</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Cliques no Link</div>
+        <div class="value">{{ stats.total_clicks }}</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="label">Credenciais Submetidas</div>
+        <div class="value">{{ stats.total_captures }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Emails Únicos</div>
+        <div class="value">{{ stats.unique_emails }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">IPs Únicos</div>
+        <div class="value">{{ stats.unique_ips }}</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Taxa de Clique</div>
+        <div class="value">{{ stats.click_rate }}</div>
+      </div>
+      <div class="stat-card red">
+        <div class="label">Taxa de Captura</div>
+        <div class="value">{{ stats.capture_rate }}</div>
+      </div>
+    </div>
+
+    <!-- Funnel -->
+    {% if stats.total_sent > 0 %}
+    <div class="funnel">
+      <h2>Funil da Campanha</h2>
+      <div class="funnel-steps">
+        <div class="funnel-step">
+          <div class="step-value">{{ stats.total_sent }}</div>
+          <div class="step-label">Enviados</div>
+        </div>
+        <div class="funnel-arrow">›</div>
+        <div class="funnel-step">
+          <div class="step-value">{{ stats.total_clicks }}</div>
+          <div class="step-label">Clicaram</div>
+        </div>
+        <div class="funnel-arrow">›</div>
+        <div class="funnel-step">
+          <div class="step-value">{{ stats.total_captures }}</div>
+          <div class="step-label">Submeteram</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Table -->
+    <div class="table-section">
+      <h2>Capturas Recentes{% if captures %} ({{ captures | length }}){% endif %}</h2>
+
+      {% if captures %}
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp (UTC)</th>
+            <th>Email</th>
+            <th>IP</th>
+            <th>Origem</th>
+            <th>Browser</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in captures %}
+          <tr>
+            <td>{{ c.timestamp[:19].replace("T", " ") }}</td>
+            <td>{{ c.email or "—" }}</td>
+            <td>{{ c.ip }}</td>
+            <td>
+              {% if c.track_token %}
+                <span class="badge email">Email</span>
+              {% else %}
+                <span class="badge direct">Direto</span>
+              {% endif %}
+            </td>
+            <td title="{{ c.user_agent }}">
+              {{ c.user_agent[:60] }}{% if c.user_agent | length > 60 %}…{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="empty">Nenhuma captura registada ainda.</p>
+      {% endif %}
+    </div>
+
+    <p class="footer-note">Projeto académico SEGRED · Diogo Sá (31378) · Diogo Monteiro (32428)</p>
+  </main>
+</body>
+</html>

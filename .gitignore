@@ -1,5 +1,6 @@
 data/logs/
 data/reports/
+detection/reports/scan_*.json
 __pycache__/
 *.pyc
 *.pyo
