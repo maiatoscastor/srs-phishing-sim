@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-06-05T09:22:25.315176+00:00",
+  "url": "https://prime-videofacturation.com/",
+  "results": [
+    {
+      "module": "domain",
+      "score": 0,
+      "flags": [],
+      "details": {
+        "url": "https://prime-videofacturation.com/",
+        "hostname": "prime-videofacturation.com",
+        "url_length": 35,
+        "dot_count": 1,
+        "keywords_found": []
+      }
+    }
+  ]
+}

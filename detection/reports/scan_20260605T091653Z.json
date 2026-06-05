@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-06-05T09:16:53.374671+00:00",
+  "url": "not a valid ::: url",
+  "results": [
+    {
+      "module": "domain",
+      "score": 0,
+      "flags": [],
+      "details": {
+        "url": "http://not a valid ::: url",
+        "hostname": "not a valid ",
+        "url_length": 26,
+        "dot_count": 0,
+        "keywords_found": []
+      }
+    }
+  ]
+}

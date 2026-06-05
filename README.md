@@ -1,41 +1,40 @@
-# Phishing Simulation & Detection
+# Simulação e Deteção de Phishing
 
-University project for the **Network and Systems Security** course.
+Projeto universitário da disciplina **Segurança de Redes e Sistemas (SEGRED)**.
 
-**Authors:**
-- Diogo Sá (31378)
-- Diogo Monteiro (32428)
+**Autores:** Diogo Sá (31378) · Diogo Monteiro (32428)
 
 ---
 
-## Project Description
+## Descrição
 
-This project implements a controlled phishing simulation and detection system for educational purposes. The simulation component replicates common phishing attack techniques in an isolated environment, while the detection component analyses URLs, emails, and network traffic to identify phishing indicators using heuristic and DNS-based methods.
-
-The goal is to understand how phishing attacks are structured and how defensive tools can detect and mitigate them.
+Sistema de simulação e deteção de phishing para fins educativos. O módulo **attack** replica uma página de login Microsoft 365, regista metadados (sem passwords) e apresenta uma página de consciencialização. O módulo **detection** está planeado para análise de URLs, SSL, cabeçalhos HTTP e estrutura HTML.
 
 ---
 
-## Folder Structure
+## Estrutura
 
 ```
-phishing-SEGRED/
-├── attack/                 # Phishing simulation scripts
-│   └── templates/          # HTML email and page templates used in the simulation
-├── detection/              # Detection and analysis scripts
+srs-phishing-sim/
+├── attack/
+│   ├── app.py              # Servidor Flask
+│   ├── logger.py           # Persistência em JSON
+│   └── templates/
+│       ├── login.html
+│       └── warning.html
 ├── data/
-│   ├── logs/               # Runtime logs (git-ignored, kept via .gitkeep)
-│   └── reports/            # Generated analysis reports (git-ignored, kept via .gitkeep)
-├── docs/                   # Project documentation and report assets
-├── requirements.txt        # Python dependencies
-└── README.md               # This file
+│   ├── logs/               # captures.json (gerado em runtime)
+│   └── reports/            # Relatórios de deteção (futuro)
+├── ARCHITECTURE.md
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## Installation
+## Instalação
 
-Ensure you have Python 3.8+ installed, then install all dependencies:
+Requer Python 3.8+.
 
 ```bash
 pip install -r requirements.txt
@@ -43,14 +42,59 @@ pip install -r requirements.txt
 
 ---
 
-## How to Run
+## Execução
 
-> To be filled in as modules are developed.
+```bash
+cd attack
+python app.py
+```
+
+Abrir **http://127.0.0.1:5000**. Após submissão do formulário, o utilizador é redirecionado para `/warning`. Os metadados ficam em `data/logs/captures.json`.
+
+### Módulo detection
+
+```bash
+cd detection
+python scanner.py https://exemplo.com/login
+```
+
+Relatórios JSON gerados em `detection/reports/`.
+
+| Módulo     | Estado      | Função                                              |
+|------------|-------------|-----------------------------------------------------|
+| **attack** | Funcional   | Simulação, registo de metadados, página de aviso    |
+| **detection** | Funcional (base) | Análise heurística de URLs (`scanner.py`) |
+
+Detalhes técnicos em [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
-## Disclaimer
+## Atualizar o repositório Git
 
-> **This project is strictly for educational purposes.**
-> All simulations are performed in an isolated virtual machine environment with no connection to real users or external networks. No actual phishing attacks are conducted. The techniques demonstrated here are studied solely to understand attacker methodologies and improve defensive capabilities.
-> Misuse of these tools outside of the designated isolated environment is strictly prohibited and may violate applicable laws.
+Na pasta `srs-phishing-sim` (raiz do repositório clonado):
+
+```bash
+# 1. Ver o que mudou
+git status
+
+# 2. Adicionar ficheiros (novos e alterados)
+git add .
+
+# 3. Criar commit com mensagem descritiva
+git commit -m "Refatorar módulo attack: app.py, warning, documentação"
+
+# 4. Enviar para o GitHub
+git push origin main
+```
+
+**Notas:**
+
+- Ficheiros em `data/logs/` e `data/reports/` (excepto `.gitkeep`) não entram no Git — estão no `.gitignore`.
+- Se o `git push` falhar por alterações remotas, primeiro: `git pull origin main`, resolve conflitos se existirem, depois volta a fazer `git push`.
+- Primeira vez neste PC: `git clone https://github.com/DM1205/srs-phishing-sim.git`
+
+---
+
+## Aviso legal e ético
+
+Este projeto destina-se **exclusivamente** a fins educativos em ambiente isolado (VM ou laboratório). Não conduzir campanhas reais nem expor o servidor à Internet pública. O uso indevido pode violar a legislação aplicável (Lei n.º 109/2009, RGPD).

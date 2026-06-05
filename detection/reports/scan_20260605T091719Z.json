@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-06-05T09:17:19.227834+00:00",
+  "url": "https://bit.ly/abc123",
+  "results": [
+    {
+      "module": "domain",
+      "score": 20,
+      "flags": [
+        "Encurtador de URL detectado"
+      ],
+      "details": {
+        "url": "https://bit.ly/abc123",
+        "hostname": "bit.ly",
+        "url_length": 21,
+        "dot_count": 1,
+        "keywords_found": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campanha Anti Phishing</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #c0392b 0%, #e67e22 100%);
+      color: #fff;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .header-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 16px;
+      opacity: 0.95;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 48px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border-left: 4px solid #e67e22;
+    }
+
+    .card h2 {
+      font-size: 20px;
+      color: #c0392b;
+      margin-bottom: 16px;
+    }
+
+    .card p {
+      font-size: 15px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .tips {
+      list-style: none;
+      counter-reset: tips;
+    }
+
+    .tips li {
+      counter-increment: tips;
+      position: relative;
+      padding: 16px 0 16px 48px;
+      border-bottom: 1px solid #eee;
+      font-size: 15px;
+      color: #333;
+    }
+
+    .tips li:last-child {
+      border-bottom: none;
+    }
+
+    .tips li::before {
+      content: counter(tips);
+      position: absolute;
+      left: 0;
+      top: 16px;
+      width: 32px;
+      height: 32px;
+      background: #e67e22;
+      color: #fff;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tips strong {
+      display: block;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .cta {
+      text-align: center;
+      margin-top: 32px;
+    }
+
+    .btn-cncs {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #0067b8;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+
+    .btn-cncs:hover {
+      background: #005a9e;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-icon" aria-hidden="true">⚠️</div>
+    <h1>Atenção! Foste vítima de phishing</h1>
+    <p>Esta foi uma simulação educativa de segurança. Os teus dados não foram enviados a atacantes reais.</p>
+  </header>
+
+  <main class="content">
+    <section class="card">
+      <h2>O que acabou de acontecer?</h2>
+      <p>
+        A página em que estavas não era o site oficial da Microsoft. Era uma réplica
+        criada para uma campanha de consciencialização sobre phishing, no âmbito de um
+        projeto académico de cibersegurança.
+      </p>
+      <p>
+        Ao introduzires o teu email e password, simulaste o comportamento de uma vítima
+        real de um ataque de phishing. Num cenário real, um atacante poderia usar essas
+        credenciais para aceder à tua conta, roubar dados ou comprometer a organização.
+      </p>
+      <p>
+        <strong>Boa notícia:</strong> nesta simulação, apenas foram registados metadados
+        (email, IP, data/hora) para fins de análise e a password não foi guardada.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>5 dicas para identificar phishing</h2>
+      <ol class="tips">
+        <li>
+          <strong>Verifica sempre o URL</strong>
+          Antes de introduzires credenciais, confirma que o endereço no browser corresponde
+          ao domínio oficial (ex.: login.microsoftonline.com). Desconfia de domínios parecidos
+          mas diferentes (micros0ft.com, microsoft-login.net, etc.).
+        </li>
+        <li>
+          <strong>Não confies na urgência</strong>
+          Mensagens que pressionam para agir "agora", conta bloqueada, prémio a expirar,
+          chefe a pedir transferência, são táticas comuns. Pára, respira e confirma por outro canal.
+        </li>
+        <li>
+          <strong>Ativa a autenticação de dois fatores (2FA)</strong>
+          Mesmo que alguém obtenha a tua password, o 2FA impede o acesso não autorizado
+          na maior parte dos casos.
+        </li>
+        <li>
+          <strong>Verifica o remetente</strong>
+          Em emails suspeitos, examina o endereço completo do remetente, não apenas o nome
+          apresentado. Um "Suporte Microsoft" pode vir de um Gmail aleatório.
+        </li>
+        <li>
+          <strong>Nunca introduzas credenciais em sites desconhecidos</strong>
+          Se recebeste um link por email ou SMS, acede ao serviço digitando o URL oficial
+          manualmente ou através da app/bookmark que já usas.
+        </li>
+      </ol>
+    </section>
+
+    <div class="cta">
+      <a class="btn-cncs" href="https://www.cncs.gov.pt" target="_blank" rel="noopener noreferrer">
+        Saber mais no CNCS - Centro Nacional de Cibersegurança
+      </a>
+    </div>
+
+    <p class="footer-note">
+      Projeto académico SEGRED - Simulação de phishing para fins educativos.
+    </p>
+  </main>
+</body>
+</html>

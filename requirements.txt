@@ -5,3 +5,4 @@ dnspython
 pyopenssl
 rich
 python-dateutil
+colorama
