@@ -29,7 +29,13 @@ def _append(path: str, entry: dict) -> None:
             json.dump(records, fh, indent=2, ensure_ascii=False)
 
 
-def log_capture(email: str, ip: str, user_agent: str, track_token: str = "") -> str:
+def log_capture(
+    email: str,
+    ip: str,
+    user_agent: str,
+    track_token: str = "",
+    geo: dict | None = None,
+) -> str:
     victim_id = str(uuid.uuid4())
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -38,6 +44,7 @@ def log_capture(email: str, ip: str, user_agent: str, track_token: str = "") -> 
         "user_agent": user_agent,
         "track_token": track_token or None,
         "victim_id": victim_id,
+        "geo": geo or {},
     }
     _append(CAPTURES_PATH, entry)
     return victim_id

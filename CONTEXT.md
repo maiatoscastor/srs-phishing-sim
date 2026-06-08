@@ -131,11 +131,39 @@ A vítima navega para o IP da VM atacante (`http://<IP_VM1>:5000`). Qualquer dis
 
 ## Melhorias planeadas (próximas tarefas)
 
-1. **Corrigir race condition no logger** — adicionar `fcntl.flock` (Linux/Mac) ou equivalente
-2. **Adicionar `captures.json` ao `.gitignore`**
-3. **Completar módulo de deteção** — implementar WHOIS, DNS, TLS e análise de headers HTTP usando os pacotes já no requirements.txt
-4. **Dashboard de campanha** — rota `/dashboard` no Flask que lê `captures.json` e mostra métricas em tempo real (submissões, IPs, timeline)
-5. **Simulação de envio de email** — enviar emails de phishing para lista de teste com tokens únicos por destinatário, rastrear cliques
+### Fase A — Correções e debt técnico
+1. **Corrigir race condition no `logger.py`** — padrão read→append→write sem lock. Em submissões simultâneas pode perder entradas. Solução: `fcntl.flock` (Linux) ou `threading.Lock` global.
+2. **Adicionar `captures.json` ao `.gitignore`** — ficheiro com dados de teste está a ser rastreado pelo git.
+
+### Fase B — Três melhorias principais (por ordem de implementação)
+
+#### B1 — Geolocalização OSINT automática das capturas *(~meio dia)*
+- Cada `POST /capture` faz chamada à **ip-api.com** (gratuita, sem API key) com o IP da vítima
+- Enriquece o registo com: país, cidade, ISP, ASN, coordenadas (lat/lon)
+- Dashboard mostra bandeira do país e operador de cada vítima
+- Adicionar `countryCode`, `city`, `isp` ao schema de `captures.json`
+
+#### B2 — Browser fingerprinting silencioso na página de ataque *(~1-2 dias)*
+- JavaScript injetado na `login.html` que corre **antes** de qualquer interação da vítima
+- Dados recolhidos silenciosamente (sem qualquer popup ou permissão):
+  - Resolução do ecrã, color depth, timezone, idioma do browser
+  - Lista de dispositivos de media disponíveis (câmara/microfone — só detecção, não acesso)
+  - Canvas fingerprint (hash único derivado do browser + GPU)
+  - WebGL renderer e vendor (identifica o hardware)
+  - Plugins e fonts disponíveis
+  - `navigator.platform`, `hardwareConcurrency`, `deviceMemory`
+- **Nota técnica sobre câmara:** acesso silencioso ao stream de vídeo/áudio é bloqueado pelos browsers sem permissão explícita do utilizador. O que é possível silenciosamente é apenas detetar a *presença* dos dispositivos via `enumerateDevices()`. Para acesso real ao stream seria necessário social engineering (página pedir permissão com pretexto falso) — demonstrar e explicar este mecanismo ao stor como exemplo de técnica de evasão.
+- Dados enviados via `fetch` em background para `/fingerprint` antes do submit do formulário
+- Guardados em `data/logs/fingerprints.json` e associados ao `victim_id`
+
+#### B3 — Machine Learning no módulo de deteção *(~3-4 dias)*
+- Dataset: **PhishTank** (URLs de phishing confirmadas, download gratuito em CSV) + **Majestic Million** (URLs legítimas)
+- Feature engineering: extrair as mesmas features já implementadas em `domain_check.py` + novas (entropia do domínio, ratio consoantes/vogais, n-gramas de caracteres)
+- Modelo: **Random Forest** com scikit-learn (robusto, interpretável, sem necessidade de GPU)
+- Script `detection/train.py`: treina, avalia e guarda o modelo em `detection/model.pkl`
+- Integração em `scanner.py` como módulo adicional: além do score heurístico, o modelo ML dá uma probabilidade (ex: "94% probabilidade de phishing")
+- Relatório de avaliação: accuracy, precision, recall, F1, confusion matrix (visualizado com rich ou matplotlib)
+- **Argumento principal:** comparar heurísticas vs ML — mostrar onde um falha e o outro acerta
 
 ---
 

