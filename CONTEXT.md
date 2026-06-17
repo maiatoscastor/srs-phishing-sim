@@ -58,11 +58,10 @@ VM3 — Windows/Ubuntu (Defensor/SOC)
   - `POST /capture` → regista metadados, redireciona para `/verify`
   - `GET /verify` → página de "verificação biométrica" que pede acesso à câmara
   - `POST /frame` → recebe frames JPEG da câmara em base64 e guarda em `data/logs/photos/`
-  - `GET /live/<fp_token>` → serve o frame mais recente de uma vítima
-  - `GET /livefeed/<fp_token>` → HTML com live feed da câmara
+  - `GET /live/<fp_token>` → serve a foto capturada da câmara da vítima
   - `POST /fingerprint` → recebe dados de fingerprinting do browser (silencioso)
   - `GET /warning` → página educativa com dicas anti-phishing
-  - `GET /dashboard` → dashboard com todas as capturas, estatísticas e live feeds
+  - `GET /dashboard` → dashboard com capturas, estatísticas e foto da câmara (se disponível)
 
 #### login.html — Página de phishing
 - Clone visual da página de login Microsoft 365
@@ -203,8 +202,7 @@ srs-phishing-sim/
 │       ├── login.html            # Página falsa Microsoft 365 + fingerprinting JS
 │       ├── verify.html           # Página de "verificação biométrica" (câmara)
 │       ├── warning.html          # Página educativa pós-captura
-│       ├── dashboard.html        # Dashboard do atacante
-│       └── livefeed.html         # Live feed câmara vítima
+│       └── dashboard.html        # Dashboard do atacante
 ├── data/
 │   ├── logs/                     # campaign/clicks/captures/fingerprints.json (git-ignored)
 │   └── reports/                  # git-ignored
@@ -223,9 +221,9 @@ srs-phishing-sim/
 │   └── scanner.py                # CLI principal, agrega módulos, imprime resultado
 ├── research/
 │   └── pesquisa-casos-reais.md   # 4 casos reais com fontes verificadas
-├── ARCHITECTURE.md               # desatualizado
+├── ARCHITECTURE.md
 ├── CONTEXT.md                    # este ficheiro
-├── README.md                     # parcialmente atualizado
+├── README.md
 └── requirements.txt              # flask, requests, python-whois, dnspython, pyopenssl,
                                   # rich, python-dateutil, colorama, beautifulsoup4
 ```
@@ -251,7 +249,7 @@ srs-phishing-sim/
 - O que é capturado e porquê: email, IP, user-agent, timestamp, geo, fingerprint
 - O que NÃO é guardado e porquê: password (decisão ética explícita)
 - Fingerprinting silencioso: canvas hash, WebGL, resolução, timezone
-- Câmara: `/verify` pede acesso, frames enviados para `/frame`, visíveis em `/livefeed`
+- Câmara: `/verify` pede acesso à câmara, captura uma única foto (JPEG) e envia para `/frame`; foto visível no modal da dashboard via `/live/<fp_token>`
 - Screenshot: página de login + página de aviso + dashboard
 
 #### 4. Análise Forense Pós-Ataque (1 pág)

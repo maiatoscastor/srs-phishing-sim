@@ -1,6 +1,4 @@
 [
-  { "name": "Ana Silva",    "email": "ana.silva@empresa.pt" },
-  { "name": "Bruno Costa",  "email": "bruno.costa@empresa.pt" },
-  { "name": "Carla Santos", "email": "carla.santos@empresa.pt" },
-  { "name": "Diogo Ferreira", "email": "diogo.ferreira@empresa.pt" }
+  { "name": "Exemplo Um", "email": "exemplo1@gmail.com" },
+  { "name": "Exemplo Dois", "email": "exemplo2@gmail.com" }
 ]
