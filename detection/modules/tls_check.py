@@ -1,4 +1,4 @@
-"""Análise TLS/SSL — validade, emissor, idade do certificado."""
+"""Análise TLS/SSL — validade, emissor, idade e confiança da cadeia de certificados."""
 
 import socket
 import ssl
@@ -9,15 +9,18 @@ from OpenSSL import crypto
 
 from .utils import normalize_url
 
-SCORE_NO_TLS = 30
-SCORE_SELF_SIGNED = 25
-SCORE_CERT_VERY_NEW = 20   # emitido há < 7 dias
-SCORE_CERT_NEW = 10        # emitido há < 30 dias
-SCORE_CERT_EXPIRING = 10   # expira em < 30 dias
-SCORE_CERT_EXPIRED = 30
+SCORE_NO_TLS         = 40   # HTTP puro — em 2026 todos os sites legítimos usam HTTPS
+SCORE_SELF_SIGNED    = 25   # certificado auto-assinado não é emitido por CA reconhecida
+SCORE_UNTRUSTED_CHAIN = 25  # cadeia rejeitada por verificação TLS padrão
+SCORE_CERT_VERY_NEW  = 20   # emitido há < 7 dias — infraestrutura de phishing recente
+SCORE_CERT_NEW       = 10   # emitido há < 30 dias
+SCORE_CERT_EXPIRING  = 10   # expira em < 30 dias
+SCORE_CERT_EXPIRED   = 30   # certificado já expirado
 
 
 def _fetch_cert(hostname: str, port: int = 443) -> crypto.X509:
+    # CERT_NONE permite obter metadados mesmo de certificados inválidos ou auto-assinados;
+    # a verificação de confiança da cadeia é feita separadamente em _chain_is_trusted.
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
@@ -25,6 +28,21 @@ def _fetch_cert(hostname: str, port: int = 443) -> crypto.X509:
         with ctx.wrap_socket(sock, server_hostname=hostname) as ssock:
             der = ssock.getpeercert(binary_form=True)
     return crypto.load_certificate(crypto.FILETYPE_ASN1, der)
+
+
+def _chain_is_trusted(hostname: str, port: int) -> bool:
+    # Verifica se a cadeia de certificados passa na validação padrão de um cliente TLS.
+    # Cadeia inválida é um indicador de phishing — infraestrutura configurada à pressa.
+    ctx = ssl.create_default_context()
+    try:
+        with socket.create_connection((hostname, port), timeout=5) as sock:
+            with ctx.wrap_socket(sock, server_hostname=hostname):
+                pass
+        return True
+    except ssl.SSLError:
+        return False
+    except Exception:
+        return False
 
 
 def _parse_cert_date(b: bytes) -> datetime:
@@ -61,10 +79,10 @@ def analyze(url: str) -> dict:
 
     now = datetime.now(timezone.utc)
     not_before = _parse_cert_date(x509.get_notBefore())
-    not_after = _parse_cert_date(x509.get_notAfter())
-    issuer_cn = x509.get_issuer().CN or ""
+    not_after  = _parse_cert_date(x509.get_notAfter())
+    issuer_cn  = x509.get_issuer().CN or ""
     subject_cn = x509.get_subject().CN or ""
-    days_old = (now - not_before).days
+    days_old       = (now - not_before).days
     days_remaining = (not_after - now).days
 
     details.update({
@@ -77,10 +95,13 @@ def analyze(url: str) -> dict:
         "days_remaining": days_remaining,
     })
 
-    # Self-signed: issuer e subject são iguais
+    # Certificado auto-assinado: o emissor e o sujeito são a mesma entidade
     if issuer_cn and issuer_cn == subject_cn:
         flags.append("Certificado auto-assinado")
         score += SCORE_SELF_SIGNED
+    elif not _chain_is_trusted(hostname, port):
+        flags.append("Cadeia de certificados não é confiável (falha na verificação TLS padrão)")
+        score += SCORE_UNTRUSTED_CHAIN
 
     if days_remaining <= 0:
         flags.append("Certificado expirado")

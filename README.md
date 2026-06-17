@@ -60,6 +60,20 @@ python scanner.py https://exemplo.com/login
 
 Relatórios JSON gerados em `detection/reports/`.
 
+#### Comparação com VirusTotal (opcional)
+
+O scanner compara o veredito heurístico com o VirusTotal, mas só se a variável de ambiente `VT_API_KEY` estiver definida. Sem chave, o scanner funciona normalmente e mostra "Indisponível: VT_API_KEY não configurada".
+
+1. Criar conta gratuita em https://www.virustotal.com/ e copiar a API key (perfil → API Key).
+2. Definir a variável de ambiente antes de correr o scanner:
+
+```powershell
+$env:VT_API_KEY = "a_tua_chave_aqui"
+python scanner.py https://exemplo.com/login
+```
+
+A versão gratuita tem limite de 4 pedidos/minuto e 500/dia — suficiente para testes pontuais.
+
 | Módulo     | Estado      | Função                                              |
 |------------|-------------|-----------------------------------------------------|
 | **attack** | Funcional   | Simulação, registo de metadados, página de aviso    |

@@ -6,3 +6,4 @@ pyopenssl
 rich
 python-dateutil
 colorama
+beautifulsoup4

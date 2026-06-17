@@ -5,12 +5,12 @@ import requests
 from .utils import normalize_url
 
 SECURITY_HEADERS: dict[str, int] = {
-    "Strict-Transport-Security": 15,
-    "Content-Security-Policy": 10,
-    "X-Frame-Options": 10,
-    "X-Content-Type-Options": 5,
-    "Referrer-Policy": 5,
-    "Permissions-Policy": 5,
+    "Strict-Transport-Security": 10,
+    "Content-Security-Policy": 5,
+    "X-Frame-Options": 5,
+    "X-Content-Type-Options": 3,
+    "Referrer-Policy": 3,
+    "Permissions-Policy": 3,
 }
 
 REQUEST_TIMEOUT = 8

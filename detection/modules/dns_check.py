@@ -20,14 +20,22 @@ def _query(hostname: str, record_type: str) -> list[str]:
         return []
 
 
+def _base_domain(hostname: str) -> str:
+    # NS e MX vivem normalmente no domínio apex, não em subdomínios (ex: www.google.com
+    # não tem NS próprio — está delegado em google.com)
+    parts = hostname.lower().split(".")
+    return ".".join(parts[-2:]) if len(parts) >= 2 else hostname.lower()
+
+
 def analyze(url: str) -> dict:
     hostname = get_hostname(url)
+    base = _base_domain(hostname)
     flags: list[str] = []
     score = 0
 
     a_records = _query(hostname, "A")
-    mx_records = _query(hostname, "MX")
-    ns_records = _query(hostname, "NS")
+    mx_records = _query(base, "MX")
+    ns_records = _query(base, "NS")
 
     details = {
         "hostname": hostname,

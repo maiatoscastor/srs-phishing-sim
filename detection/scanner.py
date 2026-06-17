@@ -13,7 +13,10 @@ from colorama import Fore, Style, init
 from modules.domain_check import analyze as analyze_domain
 from modules.dns_check import analyze as analyze_dns
 from modules.headers_check import analyze as analyze_headers
+from modules.html_check import analyze as analyze_html
+from modules.safebrowsing_check import query as query_safebrowsing
 from modules.tls_check import analyze as analyze_tls
+from modules.virustotal_check import query as query_virustotal
 from modules.whois_check import analyze as analyze_whois
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "reports")
@@ -24,6 +27,7 @@ MODULES = [
     analyze_dns,
     analyze_tls,
     analyze_headers,
+    analyze_html,
 ]
 
 
@@ -81,7 +85,36 @@ def _print_results(url: str, results: list[dict], final_score: int) -> None:
             print(f"    - Sem alertas")
 
 
-def _save_report(url: str, results: list[dict], final_score: int) -> None:
+def _print_virustotal(vt: dict) -> None:
+    print(f"\n{Fore.CYAN}Comparação com VirusTotal{Style.RESET_ALL}")
+    if not vt.get("available"):
+        print(f"  Indisponível: {vt.get('reason', 'desconhecido')}")
+        return
+
+    malicious = vt["malicious"]
+    suspicious = vt["suspicious"]
+    total = vt["total_engines"]
+    color = Fore.GREEN if malicious == 0 and suspicious == 0 else (Fore.YELLOW if malicious == 0 else Fore.RED)
+    print(f"  {color}{malicious + suspicious}/{total} motores assinalaram esta URL{Style.RESET_ALL}")
+    print(f"    Maliciosos: {malicious} | Suspeitos: {suspicious}")
+    print(f"    Detalhes: {vt['permalink']}")
+
+
+def _print_safebrowsing(gsb: dict) -> None:
+    print(f"\n{Fore.CYAN}Comparação com Google Safe Browsing{Style.RESET_ALL}")
+    if not gsb.get("available"):
+        print(f"  Indisponível: {gsb.get('reason', 'desconhecido')}")
+        return
+
+    if gsb["flagged"]:
+        tipos = ", ".join(gsb["threat_types"])
+        print(f"  {Fore.RED}URL ASSINALADA — {gsb['verdict']}{Style.RESET_ALL}")
+        print(f"    Tipos de ameaça: {tipos}")
+    else:
+        print(f"  {Fore.GREEN}URL não assinalada pela Google{Style.RESET_ALL}")
+
+
+def _save_report(url: str, results: list[dict], final_score: int, virustotal: dict, safebrowsing: dict) -> None:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     filename = f"scan_{timestamp}.json"
     path = os.path.join(REPORTS_DIR, filename)
@@ -92,6 +125,8 @@ def _save_report(url: str, results: list[dict], final_score: int) -> None:
         "final_score": final_score,
         "verdict": "SEGURO" if final_score <= 30 else ("SUSPEITO" if final_score <= 60 else "PHISHING"),
         "results": results,
+        "virustotal": virustotal,
+        "safebrowsing": safebrowsing,
     }
 
     with open(path, "w", encoding="utf-8") as fh:
@@ -101,6 +136,7 @@ def _save_report(url: str, results: list[dict], final_score: int) -> None:
 
 
 def main() -> None:
+    sys.stdout.reconfigure(encoding="utf-8")
     init(autoreset=True)
     _ensure_reports_dir()
 
@@ -126,7 +162,19 @@ def main() -> None:
     _print_results(url, results, final_score)
 
     try:
-        _save_report(url, results, final_score)
+        virustotal = query_virustotal(url)
+    except Exception as exc:
+        virustotal = {"available": False, "reason": f"Erro inesperado: {exc}"}
+    _print_virustotal(virustotal)
+
+    try:
+        safebrowsing = query_safebrowsing(url)
+    except Exception as exc:
+        safebrowsing = {"available": False, "reason": f"Erro inesperado: {exc}"}
+    _print_safebrowsing(safebrowsing)
+
+    try:
+        _save_report(url, results, final_score, virustotal, safebrowsing)
     except OSError as exc:
         print(f"{Fore.YELLOW}Aviso: não foi possível guardar relatório — {exc}{Style.RESET_ALL}")
 

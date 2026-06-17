@@ -4,45 +4,32 @@ import ipaddress
 import re
 from urllib.parse import urlparse
 
-# Palavras frequentes em URLs de phishing
+from .utils import normalize_url
+
+# Palavras frequentes em URLs de phishing que raramente aparecem em sites legítimos
 SUSPICIOUS_KEYWORDS = ("login", "secure", "verify", "account", "update", "signin")
 
-# Domínios de encurtadores conhecidos
+# Serviços de encurtamento de URL — ocultam o destino real da ligação
 URL_SHORTENERS = ("bit.ly", "tinyurl.com", "t.co")
 
-# Pontuação por tipo de alerta
-SCORE_URL_LONG = 15
-SCORE_IP_HOST = 25
-SCORE_KEYWORD = 10
-SCORE_MANY_DOTS = 15
-SCORE_SHORTENER = 20
-SCORE_AT_SYMBOL = 25
-
-
-def _normalize_url(url: str) -> str:
-    # Garantir esquema http/https para parsing
-    url = url.strip()
-    if not url:
-        raise ValueError("URL vazia")
-    if not re.match(r"^https?://", url, re.IGNORECASE):
-        url = "http://" + url
-    return url
+SCORE_URL_LONG      = 15   # URLs muito longas são comuns em phishing para esconder o domínio real
+SCORE_IP_HOST       = 25   # IP em vez de domínio indica falta de registo legítimo
+SCORE_KEYWORD       = 10   # por palavra-chave suspeita encontrada
+SCORE_MANY_DOTS     = 15   # muitos subdomínios sugerem spoofing (ex: paypal.secure.login.com.evil.com)
+SCORE_SHORTENER     = 20   # encurtador oculta o destino — impossível avaliar sem seguir
+SCORE_AT_SYMBOL     = 25   # o browser ignora tudo antes do @ na URL (técnica de ofuscação)
 
 
 def _hostname_is_ip(hostname: str) -> bool:
-    # Verificar se o hostname é IPv4 ou IPv6
-    hostname = hostname.strip("[]")
     try:
-        ipaddress.ip_address(hostname)
+        ipaddress.ip_address(hostname.strip("[]"))
         return True
     except ValueError:
         return False
 
 
 def _count_domain_dots(hostname: str) -> int:
-    # Contar pontos no hostname (ignorar porta)
-    host = hostname.split(":")[0].lower()
-    return host.count(".")
+    return hostname.split(":")[0].lower().count(".")
 
 
 def _is_shortener(hostname: str) -> bool:
@@ -55,8 +42,7 @@ def _find_keywords(url_lower: str) -> list[str]:
 
 
 def analyze(url: str) -> dict:
-    """Analisar URL e devolver score, flags e detalhes."""
-    normalized = _normalize_url(url)
+    normalized = normalize_url(url)
     parsed = urlparse(normalized)
 
     if not parsed.netloc:
@@ -67,8 +53,10 @@ def analyze(url: str) -> dict:
         raise ValueError("URL inválida ou sem domínio")
     if not _hostname_is_ip(hostname) and not re.match(r"^[a-zA-Z0-9.-]+$", hostname):
         raise ValueError("URL inválida ou sem domínio")
+
     url_lower = normalized.lower()
     flags: list[str] = []
+    score = 0
     details: dict = {
         "url": normalized,
         "hostname": hostname,
@@ -77,45 +65,35 @@ def analyze(url: str) -> dict:
         "keywords_found": [],
     }
 
-    score = 0
-
-    # Comprimento excessivo da URL
     if len(normalized) > 75:
         flags.append("URL com mais de 75 caracteres")
         score += SCORE_URL_LONG
 
-    # IP em vez de domínio
     if _hostname_is_ip(hostname):
         flags.append("Hostname é um endereço IP")
         score += SCORE_IP_HOST
 
-    # Palavras-chave suspeitas
     keywords = _find_keywords(url_lower)
     details["keywords_found"] = keywords
     for kw in keywords:
         flags.append(f"Palavra-chave suspeita: {kw}")
         score += SCORE_KEYWORD
 
-    # Demasiados subdomínios
     if _count_domain_dots(hostname) > 3:
         flags.append("Domínio com mais de 3 pontos")
         score += SCORE_MANY_DOTS
 
-    # Encurtador de URL
     if _is_shortener(hostname):
         flags.append("Encurtador de URL detectado")
         score += SCORE_SHORTENER
 
-    # Símbolo @ (técnica de ofuscação)
     if "@" in normalized:
         flags.append("Símbolo @ presente na URL")
         score += SCORE_AT_SYMBOL
 
-    score = min(score, 100)
-
     return {
         "module": "domain",
-        "score": score,
+        "score": min(score, 100),
         "flags": flags,
         "details": details,
     }
